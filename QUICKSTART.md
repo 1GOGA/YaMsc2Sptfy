@@ -27,9 +27,11 @@ Open `.env` and fill in your Spotify Developer credentials:
 ```env
 SPOTIFY_CLIENT_ID=your_actual_client_id
 SPOTIFY_CLIENT_SECRET=your_actual_client_secret
-REDIRECT_URI=http://localhost:8000/auth/callback
+REDIRECT_URI=http://127.0.0.1:8000/auth/callback
 DEBUG=True
 ```
+
+⚠️ **Important**: Spotify does NOT allow `localhost` - use `127.0.0.1` instead!
 
 **Where to get Spotify credentials:**
 1. Go to https://developer.spotify.com/dashboard
@@ -37,7 +39,7 @@ DEBUG=True
 3. Click "Create an App"
 4. Accept terms and create the app
 5. Copy `Client ID` and `Client Secret`
-6. In Settings, add Redirect URI: `http://localhost:8000/auth/callback`
+6. In Settings, add Redirect URI: `http://127.0.0.1:8000/auth/callback` (⚠️ NOT localhost!)
 
 #### Step 4: Run the Server
 ```bash
