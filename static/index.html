@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YaMsc2Sptfy - Yandex Music to Spotify Playlist Migrator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Dark mode configuration
+        const darkModeScript = document.createElement('script');
+        const darkModeCode = `
+            if (localStorage.theme === 'dark' || 
+                (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+        `;
+        eval(darkModeCode);
+        
+        // Translations
+        const translations = {
+            en: {
+                title: "YaMsc2Sptfy - Yandex Music to Spotify Playlist Migrator",
+                tagline: "Migrate playlists from Yandex Music to Spotify",
+                loginSpotify: "Login with Spotify",
+                logout: "Logout",
+                welcome: "Welcome!",
+                welcomeText: "This tool helps you migrate your playlists from Yandex Music to Spotify. Simply paste a link to a public Yandex Music playlist and we'll search for each track on Spotify and create a new playlist in your Spotify account.",
+                features: "Features:",
+                feature1: "Supports public Yandex Music playlists only",
+                feature2: "Tracks not found on Spotify will be skipped",
+                feature3: "A new playlist will be created in your Spotify account",
+                feature4: "Takes about 1-5 seconds per track depending on search success",
+                step1Title: "Step 1: Import Playlist",
+                playlistUrl: "Yandex Music Playlist URL or ID",
+                example: "Example: https://music.yandex.ru/users/yamusicbot/playlists/1015",
+                startMigration: "Start Migration",
+                authRequired: "Authentication Required",
+                authText: "Please log in with your Spotify account to proceed. We need permission to create playlists in your account.",
+                step2Title: "Step 2: Migration Progress",
+                tracksFound: "Tracks found from Spotify:",
+                eventLog: "Event Log:",
+                waitingEvents: "Waiting for events...",
+                migrationSuccess: "Migration Successful!",
+                createdPlaylist: "Created playlist with",
+                tracks: "tracks",
+                openSpotify: "Open on Spotify →",
+                migrateAnother: "Migrate Another Playlist",
+                migrationFailed: "Migration Failed",
+                tryAgain: "Try Again",
+                copyright: "YaMsc2Sptfy © 2026",
+                github: "GitHub",
+                madeWith: "Made with ❤️ for music lovers",
+                emptyUrl: "Please enter a Yandex Music playlist URL or ID",
+                errorStarting: "Error starting migration:",
+                enterUrl: "Please enter a Yandex Music playlist URL or ID"
+            },
+            ru: {
+                title: "YaMsc2Sptfy - Перенос плейлистов из Яндекс Музыки в Spotify",
+                tagline: "Переносите плейлисты из Яндекс Музыки в Spotify",
+                loginSpotify: "Войти со Spotify",
+                logout: "Выход",
+                welcome: "Добро пожаловать!",
+                welcomeText: "Этот инструмент помогает переносить плейлисты из Яндекс Музыки в Spotify. Просто вставьте ссылку на публичный плейлист Яндекса, и мы найдем каждый трек на Spotify и создадим новый плейлист в вашем аккаунте.",
+                features: "Возможности:",
+                feature1: "Поддерживает только публичные плейлисты Яндекс Музыки",
+                feature2: "Треки, не найденные на Spotify, будут пропущены",
+                feature3: "Новый плейлист будет создан в вашем аккаунте Spotify",
+                feature4: "Занимает примерно 1-5 секунд на трек в зависимости от успеха поиска",
+                step1Title: "Шаг 1: Импорт плейлиста",
+                playlistUrl: "URL или ID плейлиста Яндекс Музыки",
+                example: "Пример: https://music.yandex.ru/users/yamusicbot/playlists/1015",
+                startMigration: "Начать перенос",
+                authRequired: "Требуется аутентификация",
+                authText: "Пожалуйста, войдите в свой аккаунт Spotify. Нам нужно разрешение на создание плейлистов в вашем аккаунте.",
+                step2Title: "Шаг 2: Прогресс переноса",
+                tracksFound: "Треков найдено на Spotify:",
+                eventLog: "Лог событий:",
+                waitingEvents: "Ожидание событий...",
+                migrationSuccess: "Перенос выполнен успешно!",
+                createdPlaylist: "Создан плейлист с",
+                tracks: "треков",
+                openSpotify: "Открыть на Spotify →",
+                migrateAnother: "Перенести другой плейлист",
+                migrationFailed: "Перенос не удался",
+                tryAgain: "Попробовать снова",
+                copyright: "YaMsc2Sptfy © 2026",
+                github: "GitHub",
+                madeWith: "Сделано с ❤️ для любителей музыки",
+                emptyUrl: "Введите URL или ID плейлиста Яндекс Музыки",
+                errorStarting: "Ошибка при запуске переноса:",
+                enterUrl: "Введите URL или ID плейлиста Яндекс Музыки"
+            }
+        };
+    </script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-700 dark:to-green-800 shadow-lg">
+            <div class="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="text-3xl">🎵</div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">YaMsc2Sptfy</h1>
+                        <p id="tagline" class="text-green-100 text-sm">Migrate playlists from Yandex Music to Spotify</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Language selector -->
+                    <div class="flex gap-2">
+                        <button id="lang-en" class="px-3 py-1 rounded-lg bg-white text-green-600 font-semibold hover:bg-green-50 transition-colors">EN</button>
+                        <button id="lang-ru" class="px-3 py-1 rounded-lg bg-green-400 dark:bg-green-600 text-white font-semibold hover:bg-green-300 dark:hover:bg-green-500 transition-colors">РУ</button>
+                    </div>
+                    <!-- Dark mode toggle -->
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-green-400 dark:bg-green-600 hover:bg-green-300 dark:hover:bg-green-500 transition-colors" title="Toggle dark mode">
+                        <span id="theme-icon" class="text-2xl">🌙</span>
+                    </button>
+                    <!-- Auth button -->
+                    <button id="auth-btn" class="px-6 py-2 bg-white text-green-600 font-semibold rounded-lg hover:bg-green-50 transition-colors">
+                        Login with Spotify
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="flex-1 max-w-4xl mx-auto w-full px-4 py-8 space-y-6">
+            <!-- Introduction section -->
+            <section class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 id="welcome-title" class="text-xl font-semibold mb-3">Welcome!</h2>
+                <p id="welcome-text" class="text-gray-700 dark:text-gray-300 mb-4">
+                    This tool helps you migrate your playlists from Yandex Music to Spotify.
+                </p>
+                <ul class="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-2">
+                    <li id="feature1"></li>
+                    <li id="feature2"></li>
+                    <li id="feature3"></li>
+                    <li id="feature4"></li>
+                </ul>
+            </section>
+
+            <!-- Playlist input section -->
+            <section id="input-section" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hidden">
+                <h2 id="step1-title" class="text-xl font-semibold mb-4">Step 1: Import Playlist</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="playlist-url" id="playlist-url-label" class="block text-sm font-medium mb-2">
+                            Yandex Music Playlist URL or ID
+                        </label>
+                        <input 
+                            type="text" 
+                            id="playlist-url" 
+                            placeholder="https://music.yandex.ru/users/yamusicbot/playlists/1015 or yamusicbot/1015"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        >
+                        <p id="example-text" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Example: https://music.yandex.ru/users/yamusicbot/playlists/1015
+                        </p>
+                    </div>
+                    <button 
+                        id="migrate-btn"
+                        class="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Start Migration
+                    </button>
+                </div>
+            </section>
+
+            <!-- Login prompt -->
+            <section id="login-prompt" class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-6">
+                <div class="flex items-start gap-4">
+                    <div class="text-2xl">🔐</div>
+                    <div>
+                        <h3 id="auth-required-title" class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Authentication Required</h3>
+                        <p id="auth-required-text" class="text-blue-800 dark:text-blue-200 mb-4">
+                            Please log in with your Spotify account to proceed.
+                        </p>
+                        <button 
+                            id="login-btn-prompt"
+                            class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+                        >
+                            Login with Spotify
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress section -->
+            <section id="progress-section" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hidden">
+                <h2 id="step2-title" class="text-xl font-semibold mb-4">Step 2: Migration Progress</h2>
+                
+                <!-- Progress bar -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span id="tracks-found-label">Tracks found from Spotify:</span>
+                        <span id="progress-text" class="font-semibold">0/0</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                        <div id="progress-bar" class="bg-green-500 h-3 rounded-full transition-all duration-300 w-0"></div>
+                    </div>
+                </div>
+
+                <!-- Status message -->
+                <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg">
+                    <p id="status-message" class="text-sm">
+                        <span class="inline-block animate-spin mr-2">⏳</span>
+                        Initializing migration...
+                    </p>
+                </div>
+
+                <!-- Event log -->
+                <div class="mb-4">
+                    <h3 id="event-log-title" class="font-semibold mb-2 text-sm">Event Log:</h3>
+                    <div id="event-log" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 font-mono text-sm space-y-1">
+                        <p class="text-gray-600 dark:text-gray-400">Waiting for events...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Result section -->
+            <section id="result-section" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hidden">
+                <div id="result-content"></div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
+            <div class="max-w-4xl mx-auto px-4 py-6 text-center text-gray-600 dark:text-gray-400 text-sm">
+                <p>
+                    <span id="copyright"></span> | 
+                    <a href="https://github.com/your-repo" class="text-green-600 dark:text-green-400 hover:underline">GitHub</a> | 
+                    <span id="made-with"></span>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = '';
+        const POLL_INTERVAL = 1500; // ms
+
+        // State management
+        let currentJobId = null;
+        let pollTimeoutId = null;
+        let isAuthenticated = false;
+        let currentLanguage = localStorage.language || 'en';
+
+        // DOM elements
+        const loginBtn = document.getElementById('auth-btn');
+        const loginBtnPrompt = document.getElementById('login-btn-prompt');
+        const migrateBtn = document.getElementById('migrate-btn');
+        const playlistUrl = document.getElementById('playlist-url');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const inputSection = document.getElementById('input-section');
+        const loginPrompt = document.getElementById('login-prompt');
+        const progressSection = document.getElementById('progress-section');
+        const resultSection = document.getElementById('result-section');
+        const eventLog = document.getElementById('event-log');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const statusMessage = document.getElementById('status-message');
+        const langEnBtn = document.getElementById('lang-en');
+        const langRuBtn = document.getElementById('lang-ru');
+
+        // Translations object (already defined in head)
+        
+        // Get translation
+        function t(key) {
+            return translations[currentLanguage]?.[key] || translations.en[key] || key;
+        }
+
+        // Apply translations
+        function applyTranslations() {
+            document.title = t('title');
+            document.getElementById('tagline').textContent = t('tagline');
+            document.getElementById('welcome-title').textContent = t('welcome');
+            document.getElementById('welcome-text').textContent = t('welcomeText');
+            document.getElementById('feature1').textContent = t('feature1');
+            document.getElementById('feature2').textContent = t('feature2');
+            document.getElementById('feature3').textContent = t('feature3');
+            document.getElementById('feature4').textContent = t('feature4');
+            document.getElementById('step1-title').textContent = t('step1Title');
+            document.getElementById('playlist-url-label').textContent = t('playlistUrl');
+            document.getElementById('example-text').textContent = `${t('example')}`;
+            document.getElementById('migrate-btn').textContent = t('startMigration');
+            document.getElementById('auth-required-title').textContent = t('authRequired');
+            document.getElementById('auth-required-text').textContent = t('authText');
+            document.getElementById('login-btn-prompt').textContent = t('loginSpotify');
+            document.getElementById('step2-title').textContent = t('step2Title');
+            document.getElementById('tracks-found-label').textContent = t('tracksFound');
+            document.getElementById('event-log-title').textContent = t('eventLog') + ':';
+            document.getElementById('copyright').textContent = t('copyright');
+            document.getElementById('made-with').textContent = t('madeWith');
+            
+            // Update auth button text based on state
+            updateAuthButtonText();
+            
+            // Update language button styles
+            langEnBtn.classList.toggle('bg-white text-green-600', currentLanguage === 'en');
+            langEnBtn.classList.toggle('bg-green-400 dark:bg-green-600 text-white', currentLanguage !== 'en');
+            langRuBtn.classList.toggle('bg-white text-green-600', currentLanguage === 'ru');
+            langRuBtn.classList.toggle('bg-green-400 dark:bg-green-600 text-white', currentLanguage !== 'ru');
+        }
+
+        function updateAuthButtonText() {
+            if (isAuthenticated) {
+                loginBtn.textContent = currentLanguage === 'ru' ? 'Выход' : 'Logout';
+                document.getElementById('login-btn-prompt').textContent = t('loginSpotify');
+            } else {
+                loginBtn.textContent = t('loginSpotify');
+                document.getElementById('login-btn-prompt').textContent = t('loginSpotify');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTranslations();
+            setupThemeToggle();
+            setupLanguageToggle();
+            checkAuthStatus();
+            setupEventListeners();
+        });
+
+        // Language toggle
+        function setupLanguageToggle() {
+            langEnBtn.addEventListener('click', () => {
+                currentLanguage = 'en';
+                localStorage.language = 'en';
+                applyTranslations();
+            });
+
+            langRuBtn.addEventListener('click', () => {
+                currentLanguage = 'ru';
+                localStorage.language = 'ru';
+                applyTranslations();
+            });
+        }
+
+        // Theme toggle
+        function setupThemeToggle() {
+            const isDark = localStorage.theme === 'dark' || 
+                (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            updateThemeUI(isDark);
+
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.theme = 'light';
+                    updateThemeUI(false);
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.theme = 'dark';
+                    updateThemeUI(true);
+                }
+            });
+        }
+
+        function updateThemeUI(isDark) {
+            themeIcon.textContent = isDark ? '☀️' : '🌙';
+        }
+
+        // Auth status check
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/status`);
+                const data = await response.json();
+                isAuthenticated = data.is_authenticated;
+                updateUIState();
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                isAuthenticated = false;
+                updateUIState();
+            }
+        }
+
+        // Update UI based on auth state
+        function updateUIState() {
+            if (isAuthenticated) {
+                loginBtn.textContent = currentLanguage === 'ru' ? 'Выход' : 'Logout';
+                loginBtn.onclick = logout;
+                inputSection.classList.remove('hidden');
+                loginPrompt.classList.add('hidden');
+                migrateBtn.disabled = false;
+            } else {
+                loginBtn.textContent = t('loginSpotify');
+                loginBtn.onclick = login;
+                inputSection.classList.add('hidden');
+                loginPrompt.classList.remove('hidden');
+                migrateBtn.disabled = true;
+            }
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            loginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (isAuthenticated) logout();
+                else login();
+            });
+
+            loginBtnPrompt.addEventListener('click', login);
+            migrateBtn.addEventListener('click', startMigration);
+        }
+
+        // Auth functions
+        function login() {
+            window.location.href = `${API_BASE}/auth/login`;
+        }
+
+        function logout() {
+            fetch(`${API_BASE}/auth/logout`, { method: 'POST' })
+                .then(() => {
+                    isAuthenticated = false;
+                    updateUIState();
+                    clearProgress();
+                })
+                .catch(error => console.error('Logout error:', error));
+        }
+
+        // Migration functions
+        async function startMigration() {
+            const url = playlistUrl.value.trim();
+            if (!url) {
+                alert(t('enterUrl'));
+                return;
+            }
+
+            // Reset UI
+            clearProgress();
+            inputSection.classList.add('hidden');
+            progressSection.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/migrate/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ yandex_playlist_url: url }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                currentJobId = data.job_id;
+                addLog('info', '✅ ' + (currentLanguage === 'ru' ? 'Задача миграции запущена' : 'Migration job started') + ': ' + currentJobId);
+
+                // Start polling
+                pollMigrationStatus();
+            } catch (error) {
+                addLog('error', '❌ ' + t('errorStarting') + ' ' + error.message);
+                progressSection.classList.add('hidden');
+                inputSection.classList.remove('hidden');
+            }
+        }
+
+        async function pollMigrationStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/migrate/${currentJobId}/status`);
+                if (!response.ok) throw new Error('Failed to get status');
+
+                const status = await response.json();
+                updateProgress(status);
+
+                if (status.status === 'complete') {
+                    showSuccess(status);
+                } else if (status.status === 'error') {
+                    showError(status.message);
+                } else {
+                    // Continue polling
+                    pollTimeoutId = setTimeout(pollMigrationStatus, POLL_INTERVAL);
+                }
+            } catch (error) {
+                console.error('Poll error:', error);
+                pollTimeoutId = setTimeout(pollMigrationStatus, POLL_INTERVAL);
+            }
+        }
+
+        function updateProgress(status) {
+            const total = status.total || 1;
+            const found = status.progress || 0;
+            const percent = total > 0 ? (found / total) * 100 : 0;
+
+            progressBar.style.width = percent + '%';
+            progressText.textContent = `${found}/${total}`;
+            statusMessage.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> ${status.message}`;
+        }
+
+        function showSuccess(status) {
+            clearPolling();
+            progressSection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+
+            const playlistUrl = status.playlist_url || '#';
+            const tracksText = currentLanguage === 'ru' ? 
+                `Создан плейлист с <strong>${status.progress}</strong> треков на Spotify` :
+                `Created playlist with <strong>${status.progress}</strong> tracks on Spotify`;
+            const buttonText = t('openSpotify');
+            const migrateButtonText = t('migrateAnother');
+
+            resultSection.innerHTML = `
+                <div class="text-center">
+                    <div class="text-5xl mb-4">✅</div>
+                    <h2 class="text-2xl font-bold text-green-600 mb-4">${t('migrationSuccess')}</h2>
+                    <div class="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-6 mb-6">
+                        <p class="text-lg mb-4">${tracksText}</p>
+                        <a href="${playlistUrl}" target="_blank" class="inline-block px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors">
+                            ${buttonText}
+                        </a>
+                    </div>
+                    <button 
+                        onclick="location.reload()"
+                        class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                    >
+                        ${migrateButtonText}
+                    </button>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            clearPolling();
+            progressSection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+
+            const errorTitle = t('migrationFailed');
+            const tryAgainText = t('tryAgain');
+
+            resultSection.innerHTML = `
+                <div class="text-center">
+                    <div class="text-5xl mb-4">❌</div>
+                    <h2 class="text-2xl font-bold text-red-600 mb-4">${errorTitle}</h2>
+                    <p class="text-gray-700 dark:text-gray-300 mb-6">${message}</p>
+                    <button 
+                        onclick="location.reload()"
+                        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
+                    >
+                        ${tryAgainText}
+                    </button>
+                </div>
+            `;
+        }
+
+        function addLog(level, message) {
+            const logEntry = document.createElement('div');
+            const icons = {
+                'info': 'ℹ️',
+                'warning': '⚠️',
+                'error': '🔴',
+            };
+            const colors = {
+                'info': 'text-blue-600 dark:text-blue-400',
+                'warning': 'text-yellow-600 dark:text-yellow-400',
+                'error': 'text-red-600 dark:text-red-400',
+            };
+
+            logEntry.innerHTML = `
+                <span class="${colors[level] || 'text-gray-600'}">${icons[level] || '•'} ${message}</span>
+            `;
+            logEntry.className = 'py-1';
+
+            if (eventLog.children.length === 1 && eventLog.children[0].textContent.includes('Waiting')) {
+                eventLog.innerHTML = '';
+            }
+            eventLog.appendChild(logEntry);
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+
+        function clearProgress() {
+            const waitingText = t('waitingEvents');
+            eventLog.innerHTML = `<p class="text-gray-600 dark:text-gray-400">${waitingText}</p>`;
+            progressBar.style.width = '0%';
+            progressText.textContent = '0/0';
+            statusMessage.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> ' + (currentLanguage === 'ru' ? 'Инициализация миграции...' : 'Initializing migration...');
+            clearPolling();
+        }
+
+        function clearPolling() {
+            if (pollTimeoutId) {
+                clearTimeout(pollTimeoutId);
+                pollTimeoutId = null;
+            }
+        }
+    </script>
+</body>
+</html>
